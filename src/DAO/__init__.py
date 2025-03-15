@@ -3,6 +3,7 @@ from PIL import Image
 from io import BytesIO
 import face_recognition as fc
 import io
+
 def conexaodb():
     conn = psycopg2.connect(
         dbname="reconhecimentoFacial",
@@ -12,6 +13,7 @@ def conexaodb():
         port="5432"
     )
     return conn
+
 def insert_image(image_path, name):
     conn = conexaodb()
     cursor = conn.cursor()
