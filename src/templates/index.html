@@ -3,13 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reconhecimento facial</title>
+    <title>Reconhecimento Facial</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <h2>Enviar Imagem</h2>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <p class="flash-message">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
     <form action="/reconhecimento" method="POST" enctype="multipart/form-data">
         <input type="file" name="imagem" accept="image/*" required>
         <button type="submit">Enviar</button>
     </form>
+
+    <h3>Imagens Enviadas</h3>
+    <div class="image-gallery">
+        {% for image in images %}
+            <img src="{{ url_for('static', filename='images/' + image) }}" alt="Imagem enviada" class="gallery-image">
+        {% else %}
+            <p>Nenhuma imagem enviada ainda.</p>
+        {% endfor %}
+    </div>
 </body>
 </html>
