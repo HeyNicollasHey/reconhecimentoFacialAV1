@@ -7,7 +7,25 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h2>Enviar Imagem</h2>
+<div class="div-verde">
+    <h2 class="titulocadastro">Cadastrar Rostos Na Base De Dados</h2>
+
+    <form action="/cadastrarRosto" method="POST" enctype="multipart/form-data">
+        <input class="inputcadastro" type="text" name="nome" placeholder="Nome da imagem" required>
+        <input class="inputfile" type="file" name="cadastrarimagem" accept="image/*" required>
+        <button class="buttoncadastro" type="submit">Enviar</button>
+    </form>
+
+    <div class="image-gallery">
+        {% for image in images %}
+            <img src="{{ url_for('static', filename='images/' + image) }}" alt="Imagem enviada" class="gallery-image">
+        {% endfor %}
+    </div>
+</div>
+
+
+<div class="div-roxa">
+    <h2 class="tituloenviar">Enviar Imagem</h2>
 
     {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -24,13 +42,13 @@
         <button type="submit">Enviar</button>
     </form>
 
-    <h3>Imagens Enviadas</h3>
+
     <div class="image-gallery">
         {% for image in images %}
             <img src="{{ url_for('static', filename='images/' + image) }}" alt="Imagem enviada" class="gallery-image">
-        {% else %}
-            <p>Nenhuma imagem enviada ainda.</p>
         {% endfor %}
     </div>
+</div>
+
 </body>
 </html>

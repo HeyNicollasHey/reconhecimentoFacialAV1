@@ -7,25 +7,25 @@ def conexaodb():
     conn = psycopg2.connect(
         dbname="reconhecimentoFacial",
         user="postgres",
-        password="root",
+        password="1234",
         host="localhost",
         port="5432"
     )
     return conn
-def insert_image(image_path, name):
+def insert_image(image_data, name):
     conn = conexaodb()
     cursor = conn.cursor()
-
-    with open(image_path, 'rb') as file:
-        img_data = file.read()
-
-    cursor.execute('''
-        INSERT INTO images (name, image) VALUES (%s, %s)
-    ''', (name, psycopg2.Binary(img_data)))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
+    try:
+        cursor.execute(
+            "INSERT INTO images (name, image) VALUES (%s, %s)",
+            (name, psycopg2.Binary(image_data))  # Convertendo para formato binário
+        )
+        conn.commit()
+    except Exception as e:
+        print(f"Erro ao inserir imagem: {e}")
+    finally:
+        cursor.close()
+        conn.close()
 
 def retornar_image_id(image_id):
     conn = conexaodb()
