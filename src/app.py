@@ -6,12 +6,6 @@ import face_recognition as fc
 app = Flask(__name__)
 app.secret_key = "chave_secreta"
 
-UPLOAD_FOLDER = 'static/images'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-
 @app.route('/')
 def index():
     return render_template('index.html')
