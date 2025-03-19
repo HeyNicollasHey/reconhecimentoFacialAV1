@@ -1,4 +1,7 @@
 import os
+import threading
+
+import numpy as np
 from flask import Flask, render_template, request, redirect, url_for, flash
 import DAO
 import face_recognition as fc
@@ -9,6 +12,7 @@ app.secret_key = "chave_secreta"
 @app.route('/')
 def index():
     return render_template('index.html')
+
 def processar_parte_imagem(parte_imagem, banco_encodings, resultados, indice):
     face_encodings = fc.face_encodings(parte_imagem)
 
@@ -38,13 +42,30 @@ def reconhecer_rosto():
         return redirect(url_for('index'))
 
     face_image = fc.load_image_file(file)
-    face_encodings = fc.face_encodings(face_image)
+    image_array = np.array(face_image)
 
-    if not face_encodings:
-        flash("Nenhum rosto encontrado na imagem fornecida.")
-        return redirect(url_for('index'))
+    altura, largura, _ = image_array.shape
+    meio_altura, meio_largura = altura // 2, largura // 2
+
+    partes = [
+        image_array[:meio_altura, :meio_largura],
+        image_array[:meio_altura, meio_largura:],
+        image_array[meio_altura:, :meio_largura],
+        image_array[meio_altura:, meio_largura:]
+    ]
 
     banco_encodings = DAO.obter_encodings()
+
+    resultados = {}
+    threads = []
+
+    for i in range(4):
+        thread = threading.Thread(target=processar_parte_imagem, args=(partes[i], banco_encodings, resultados, i))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
 
     for i, face_encoding in enumerate(face_encodings):
         encontrado = False
