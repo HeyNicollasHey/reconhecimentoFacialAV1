@@ -1,33 +1,29 @@
 import os
 import threading
-
 import numpy as np
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import DAO
 import face_recognition as fc
 
 app = Flask(__name__)
 app.secret_key = "chave_secreta"
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-def processar_parte_imagem(parte_imagem, banco_encodings, resultados, indice):
-    face_encodings = fc.face_encodings(parte_imagem)
 
-    if not face_encodings:
-        resultados[indice] = []
-        return
+def comparar_rosto(face_encoding, banco_encodings, resultados):
 
-    encontrados = []
-    for face_encoding in face_encodings:
-        for nome, encoding_banco in banco_encodings.items():
-            if fc.compare_faces([encoding_banco], face_encoding, tolerance=0.6)[0]:
-                encontrados.append(nome)
-                break
+    lock = threading.Lock()
 
-    resultados[indice] = encontrados
+    for nome, encoding_banco in banco_encodings.items():
+        if fc.compare_faces([encoding_banco], face_encoding, tolerance=0.6)[0]:
+            with lock:
+                resultados.append(nome)
+            break
+
 
 @app.route('/reconhecimento', methods=['POST'])
 def reconhecer_rosto():
@@ -41,47 +37,36 @@ def reconhecer_rosto():
         flash("Nenhuma imagem selecionada.")
         return redirect(url_for('index'))
 
-    face_image = fc.load_image_file(file)
-    image_array = np.array(face_image)
+    try:
+        # Carrega a imagem inteira
+        face_image = fc.load_image_file(file)
 
-    altura, largura, _ = image_array.shape
-    meio_altura, meio_largura = altura // 2, largura // 2
+        # Extrai os encodings da imagem completa
+        face_encodings = fc.face_encodings(face_image)
 
-    partes = [
-        image_array[:meio_altura, :meio_largura],
-        image_array[:meio_altura, meio_largura:],
-        image_array[meio_altura:, :meio_largura],
-        image_array[meio_altura:, meio_largura:]
-    ]
+        if not face_encodings:
+            return jsonify({"mensagem": "Nenhum rosto detectado"}), 200
 
-    banco_encodings = DAO.obter_encodings()
+        banco_encodings = DAO.obter_encodings()
+        resultados = []
 
-    resultados = {}
-    threads = []
+        threads = []
+        for face_encoding in face_encodings:
+            thread = threading.Thread(target=comparar_rosto, args=(face_encoding, banco_encodings, resultados))
+            threads.append(thread)
+            thread.start()
 
-    for i in range(4):
-        thread = threading.Thread(target=processar_parte_imagem, args=(partes[i], banco_encodings, resultados, i))
-        threads.append(thread)
-        thread.start()
+        for thread in threads:
+            thread.join()
 
-    for thread in threads:
-        thread.join()
+        if not resultados:
+            return jsonify({"mensagem": "Nenhum rosto identificado"}), 200
 
-    for i, face_encoding in enumerate(face_encodings):
-        encontrado = False
+        return jsonify({"mensagem": "Reconhecimento concluído", "identificados": resultados}), 200
 
-        for nome, encoding_banco in banco_encodings.items():
-            resultado = fc.compare_faces([encoding_banco], face_encoding, tolerance=0.6)
+    except Exception as e:
+        return jsonify({"erro": f"Erro no reconhecimento: {str(e)}"}), 500
 
-            if resultado[0]:
-                flash(f"Rosto {i + 1}: {nome} identificado com sucesso!")
-                encontrado = True
-                break
-
-        if not encontrado:
-            flash(f"Rosto {i + 1}: Não identificado no banco de dados.")
-
-    return redirect(url_for('index'))
 
 
 @app.route('/cadastrarRosto', methods=['POST'])
@@ -97,9 +82,20 @@ def cadastrar_rosto():
         flash("Nenhuma imagem selecionada.")
         return redirect(url_for('index'))
 
-    img_data = file.read()
-    DAO.insert_image(img_data, nome)
-    return redirect(url_for('index'))
+    try:
+        face_image = fc.load_image_file(file)
+        face_encoding = fc.face_encodings(face_image)
+
+        if not face_encoding:
+            flash("Nenhum rosto detectado na imagem enviada.")
+            return redirect(url_for('index'))
+
+        DAO.insert_image(face_encoding[0], nome)
+        flash("Rosto cadastrado com sucesso!")
+        return redirect(url_for('index'))
+
+    except Exception as e:
+        return jsonify({"erro": f"Erro no cadastro: {str(e)}"}), 500
 
 
 if __name__ == '__main__':
