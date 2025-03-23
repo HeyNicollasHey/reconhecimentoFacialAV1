@@ -15,15 +15,12 @@ def index():
 
 
 def comparar_rosto(face_encoding, banco_encodings, resultados):
-
     lock = threading.Lock()
-
     for nome, encoding_banco in banco_encodings.items():
         if fc.compare_faces([encoding_banco], face_encoding, tolerance=0.6)[0]:
             with lock:
                 resultados.append(nome)
             break
-
 
 @app.route('/reconhecimento', methods=['POST'])
 def reconhecer_rosto():
@@ -66,7 +63,6 @@ def reconhecer_rosto():
 
     except Exception as e:
         return jsonify({"erro": f"Erro no reconhecimento: {str(e)}"}), 500
-
 
 
 @app.route('/cadastrarRosto', methods=['POST'])
