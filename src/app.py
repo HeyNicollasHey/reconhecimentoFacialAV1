@@ -35,10 +35,8 @@ def reconhecer_rosto():
         return redirect(url_for('index'))
 
     try:
-        # Carrega a imagem inteira
         face_image = fc.load_image_file(file)
 
-        # Extrai os encodings da imagem completa
         face_encodings = fc.face_encodings(face_image)
 
         if not face_encodings:
