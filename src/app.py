@@ -55,12 +55,15 @@ def reconhecer_rosto():
             thread.join()
 
         if not resultados:
-            return jsonify({"mensagem": "Nenhum rosto identificado"}), 200
+            flash("Nenhum rosto identificado.")
+        else:
+            flash(f"Rosto(s) identificado(s): {', '.join(resultados)}")
 
-        return jsonify({"mensagem": "Reconhecimento concluído", "identificados": resultados}), 200
+        return redirect(url_for('index'))
 
     except Exception as e:
-        return jsonify({"erro": f"Erro no reconhecimento: {str(e)}"}), 500
+        flash(f"Erro no reconhecimento: {str(e)}")
+        return redirect(url_for('index'))
 
 
 @app.route('/cadastrarRosto', methods=['POST'])
