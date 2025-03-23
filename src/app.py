@@ -13,21 +13,13 @@ app.secret_key = "chave_secreta"
 def index():
     return render_template('index.html')
 
-def processar_parte_imagem(parte_imagem, banco_encodings, resultados, indice):
-    face_encodings = fc.face_encodings(parte_imagem)
-
-    if not face_encodings:
-        resultados[indice] = []
-        return
-
-    encontrados = []
-    for face_encoding in face_encodings:
-        for nome, encoding_banco in banco_encodings.items():
-            if fc.compare_faces([encoding_banco], face_encoding, tolerance=0.6)[0]:
-                encontrados.append(nome)
-                break
-
-    resultados[indice] = encontrados
+def comparar_rosto(face_encoding, banco_encodings, resultados):
+    lock = threading.Lock()
+    for nome, encoding_banco in banco_encodings.items():
+        if fc.compare_faces([encoding_banco], face_encoding, tolerance=0.6)[0]:
+            with lock:
+                resultados.append(nome)
+            break
 
 @app.route('/reconhecimento', methods=['POST'])
 def reconhecer_rosto():
@@ -82,7 +74,6 @@ def reconhecer_rosto():
             flash(f"Rosto {i + 1}: Não identificado no banco de dados.")
 
     return redirect(url_for('index'))
-
 
 @app.route('/cadastrarRosto', methods=['POST'])
 def cadastrar_rosto():
