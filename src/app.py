@@ -6,16 +6,17 @@ import DAO
 import face_recognition as fc
 
 app = Flask(__name__)
-app.secret_key = "chave_secreta"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+app.secret_key = os.urandom(24)
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
 
-def comparar_rosto(face_encoding, banco_encodings, resultados):
-    lock = threading.Lock()
+def comparar_rosto(face_encoding, banco_encodings, resultados, lock):
     for nome, encoding_banco in banco_encodings.items():
         if fc.compare_faces([encoding_banco], face_encoding, tolerance=0.6)[0]:
             with lock:
@@ -40,24 +41,26 @@ def reconhecer_rosto():
         face_encodings = fc.face_encodings(face_image)
 
         if not face_encodings:
-            return jsonify({"mensagem": "Nenhum rosto detectado"}), 200
+            flash("Nenhum rosto detectado.")
+            return redirect(url_for('index'))
 
         banco_encodings = DAO.obter_encodings()
         resultados = []
+        lock = threading.Lock()
 
         threads = []
         for face_encoding in face_encodings:
-            thread = threading.Thread(target=comparar_rosto, args=(face_encoding, banco_encodings, resultados))
+            thread = threading.Thread(target=comparar_rosto, args=(face_encoding, banco_encodings, resultados,lock))
             threads.append(thread)
             thread.start()
 
         for thread in threads:
             thread.join()
 
-        if not resultados:
-            flash("Nenhum rosto identificado.")
-        else:
+        if resultados:
             flash(f"Rosto(s) identificado(s): {', '.join(resultados)}")
+        else:
+            flash("Nenhum rosto identificado.")
 
         return redirect(url_for('index'))
 
