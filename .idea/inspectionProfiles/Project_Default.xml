@@ -1,6 +1,7 @@
 <component name="InspectionProjectProfileManager">
   <profile version="1.0">
     <option name="myName" value="Project Default" />
+<<<<<<< HEAD
     <inspection_tool class="HtmlUnknownAttribute" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="myValues">
         <value>
@@ -15,6 +16,11 @@
       <option name="ignoredIdentifiers">
         <list>
           <option value="dao" />
+=======
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+>>>>>>> 44bc77d36f28d394667e147bdd854780034c0bc4
         </list>
       </option>
     </inspection_tool>
