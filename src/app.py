@@ -71,31 +71,33 @@ def reconhecer_rosto():
 
 @app.route('/cadastrarRosto', methods=['POST'])
 def cadastrar_rosto():
-    if 'cadastrarimagem' not in request.files:
-        flash("Nenhum arquivo enviado.")
+    if 'cadastrarimagem' not in request.files or 'nome' not in request.form:
         return redirect(url_for('index'))
 
     file = request.files['cadastrarimagem']
     nome = request.form['nome']
 
     if file.filename == '':
-        flash("Nenhuma imagem selecionada.")
         return redirect(url_for('index'))
 
-    try:
-        face_image = fc.load_image_file(file)
-        face_encoding = fc.face_encodings(face_image)
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
 
-        if not face_encoding:
+    try:
+        face_image = fc.load_image_file(filepath)
+        face_encodings = fc.face_encodings(face_image)
+
+        if not face_encodings:
             flash("Nenhum rosto detectado na imagem enviada.")
             return redirect(url_for('index'))
 
-        DAO.insert_image(face_encoding[0], nome)
+        DAO.insert_image(filepath, nome)
         flash("Rosto cadastrado com sucesso!")
         return redirect(url_for('index'))
-
     except Exception as e:
-        return jsonify({"erro": f"Erro no cadastro: {str(e)}"}), 500
+        flash(f"Erro no cadastro: {str(e)}")
+        return redirect(url_for('index'))
 
 
 if __name__ == '__main__':
